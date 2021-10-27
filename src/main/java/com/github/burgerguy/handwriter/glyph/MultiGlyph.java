@@ -25,6 +25,10 @@ public class MultiGlyph implements Glyph {
         }
     }
 
+    public AnchoredImage[] getAllImages() {
+        return images;
+    }
+
     @Override
     public AnchoredImage getImage() {
         int generatedNum;

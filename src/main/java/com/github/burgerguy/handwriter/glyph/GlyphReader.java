@@ -43,8 +43,12 @@ public class GlyphReader {
 
     // 3x3 normal notebook lines height per grid box
 
-    public MultiGlyph readPageGlyphs(BufferedImage originalImage, char representedChar, Random random) {
-        List<AnchoredImage> glyphList = new ArrayList<>();
+    public void readPageGlyphs(BufferedImage originalImage, char representedChar, Random random, MutableGlyphFamily glyphFamily) {
+        boolean includesCaps = Character.isAlphabetic(representedChar);
+        representedChar = Character.toLowerCase(representedChar);
+
+        List<AnchoredImage> glyphListMain = new ArrayList<>();
+        List<AnchoredImage> glyphListUpper = includesCaps ? new ArrayList<>() : null;
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < columns; col++) {
                 int x = gridToImageX(row, originalImage.getWidth());
@@ -82,9 +86,20 @@ public class GlyphReader {
                     System.out.println("Skipping image for grid section row: " + row + " col: " + col);
                     continue;
                 }
-                glyphList.add(new AnchoredImage(croppedFilteredImage, (int) (size / (2.0 / 3.0)) + newImageArea.y));
+
+                AnchoredImage anchoredImage = new AnchoredImage(croppedFilteredImage, (int) (size / (2.0 / 3.0)) + newImageArea.y);
+                if (row >= 10 && glyphListUpper != null) {
+                    glyphListUpper.add(anchoredImage);
+                } else {
+                    glyphListMain.add(anchoredImage);
+                }
             }
         }
-        return new MultiGlyph(glyphList.toArray(new AnchoredImage[0]), representedChar, random, 2);
+
+        glyphFamily.put(representedChar, new MultiGlyph(glyphListMain.toArray(new AnchoredImage[0]), representedChar, random, 2));
+        if (glyphListUpper != null) {
+            char upperChar = Character.toUpperCase(representedChar);
+            glyphFamily.put(upperChar, new MultiGlyph(glyphListUpper.toArray(new AnchoredImage[0]), upperChar, random, 2));
+        }
     }
 }
