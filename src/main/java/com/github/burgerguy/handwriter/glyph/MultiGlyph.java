@@ -1,17 +1,18 @@
 package com.github.burgerguy.handwriter.glyph;
 
-import java.awt.*;
+import com.github.burgerguy.handwriter.image.AnchoredImage;
+
 import java.util.Random;
 
 public class MultiGlyph implements Glyph {
     private final Random random;
     private final char representedChar;
-    private final Image[] images;
+    private final AnchoredImage[] images;
 
     private final int[] recentIndices;
     private int recentArrayIdx = 0;
 
-    public MultiGlyph(Image[] images, char representedChar, Random random, int recentMemorySize) {
+    public MultiGlyph(AnchoredImage[] images, char representedChar, Random random, int recentMemorySize) {
         this.images = images;
         this.representedChar = representedChar;
         this.random = random;
@@ -25,7 +26,7 @@ public class MultiGlyph implements Glyph {
     }
 
     @Override
-    public Image getImage() {
+    public AnchoredImage getImage() {
         int generatedNum;
         do {
             generatedNum = random.nextInt(images.length);

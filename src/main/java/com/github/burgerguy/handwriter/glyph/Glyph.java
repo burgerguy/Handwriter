@@ -1,8 +1,8 @@
 package com.github.burgerguy.handwriter.glyph;
 
-import java.awt.*;
+import com.github.burgerguy.handwriter.image.AnchoredImage;
 
 public interface Glyph {
-    Image getImage();
+    AnchoredImage getImage();
     char getCharacter();
 }
