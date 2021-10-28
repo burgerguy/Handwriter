@@ -13,6 +13,7 @@ public class SimplePage implements Page {
     private final boolean wordWrap;
 
     private final int pointerXStart;
+    private final int pointerYStart;
     private int pointerX;
     private int pointerY;
 
@@ -26,8 +27,9 @@ public class SimplePage implements Page {
         this.wordWrap = wordWrap;
 
         pointerXStart = (int) (getWidth() * leftMargin);
+        pointerYStart = (int) (getHeight() * rightMargin + getHeight() * lineHeight);
         pointerX = pointerXStart;
-        pointerY = (int) (getHeight() * rightMargin + getHeight() * lineHeight);
+        pointerY = pointerYStart;
     }
 
     @Override
@@ -76,17 +78,17 @@ public class SimplePage implements Page {
     }
 
     @Override
-    public int getPointerX() {
+    public float getPointerX() {
         return pointerX;
     }
 
     @Override
-    public int getPointerY() {
+    public float getPointerY() {
         return pointerY;
     }
 
     @Override
-    public void addToPointer(int x) {
+    public void addToPointer(float x) {
         pointerX += x;
     }
 
@@ -94,6 +96,12 @@ public class SimplePage implements Page {
     public void nextLine() {
         pointerX = pointerXStart;
         pointerY += getHeight() * lineHeight;
+    }
+
+    @Override
+    public void resetPointer() {
+        pointerX = pointerXStart;
+        pointerY = pointerYStart;
     }
 
 }

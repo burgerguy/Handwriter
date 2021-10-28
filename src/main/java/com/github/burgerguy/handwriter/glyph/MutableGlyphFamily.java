@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.chars.Char2ObjectOpenHashMap;
 public class MutableGlyphFamily implements GlyphFamily {
     private final Char2ObjectMap<Glyph> charToGlyphMap;
 
-    public MutableGlyphFamily(int expectedChars) {
+    public MutableGlyphFamily(int expectedChars, float spaceSize, float tabSize) {
         charToGlyphMap = new Char2ObjectOpenHashMap<>(expectedChars);
         charToGlyphMap.defaultReturnValue(SimpleGlyph.EMPTY);
     }
@@ -18,5 +18,15 @@ public class MutableGlyphFamily implements GlyphFamily {
     @Override
     public Glyph getForCharacter(char c) {
         return charToGlyphMap.get(c);
+    }
+
+    @Override
+    public float getSpaceSize() {
+        return 0;
+    }
+
+    @Override
+    public float getTabSize() {
+        return 0;
     }
 }

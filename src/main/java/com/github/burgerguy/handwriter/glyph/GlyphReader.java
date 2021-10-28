@@ -1,6 +1,6 @@
 package com.github.burgerguy.handwriter.glyph;
 
-import com.github.burgerguy.handwriter.image.AnchoredImage;
+import com.github.burgerguy.handwriter.image.GlyphImage;
 
 import java.awt.*;
 import java.awt.image.*;
@@ -13,17 +13,15 @@ public class GlyphReader {
     private final int columns;
     private final int rows;
     private final float gridLineSize;
-    private final int cropThreshold;
+    private final int alphaThreshold;
     private final float gridPaddingPercent;
-    private final int alphaAdd;
 
-    public GlyphReader(int columns, int rows, float gridLineSize, int cropThreshold, float gridPaddingPercent, int alphaAdd) {
+    public GlyphReader(int columns, int rows, float gridLineSize, int alphaThreshold, float gridPaddingPercent) {
         this.columns = columns;
         this.rows = rows;
         this.gridLineSize = gridLineSize;
-        this.cropThreshold = cropThreshold;
+        this.alphaThreshold = alphaThreshold;
         this.gridPaddingPercent = gridPaddingPercent;
-        this.alphaAdd = alphaAdd;
     }
 
     // gridLineSize / original * new = new grid line width
@@ -44,62 +42,90 @@ public class GlyphReader {
     // 3x3 normal notebook lines height per grid box
 
     public void readPageGlyphs(BufferedImage originalImage, char representedChar, Random random, MutableGlyphFamily glyphFamily) {
-        boolean includesCaps = Character.isAlphabetic(representedChar);
         representedChar = Character.toLowerCase(representedChar);
-
-        List<AnchoredImage> glyphListMain = new ArrayList<>();
-        List<AnchoredImage> glyphListUpper = includesCaps ? new ArrayList<>() : null;
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < columns; col++) {
+        List<GlyphImage> glyphListMain = new ArrayList<>();
+        List<GlyphImage> glyphListUpper = Character.isAlphabetic(representedChar) ? new ArrayList<>() : null;
+        end:
+        for (int col = 0; col < columns; col++) {
+            for (int row = 0; row < rows; row++) {
                 int x = gridToImageX(row, originalImage.getWidth());
                 int y = gridToImageY(col, originalImage.getHeight());
                 int size = gridBoxSize(originalImage.getWidth());
 
+                final int[] highestAlpha = {0}; // ew
                 Rectangle newImageArea = new Rectangle((int) (size / 2.0), (int) (size / 2.0), 0, 0);
                 ImageFilter grayscaleAlphaFilter = new RGBImageFilter() {
                     @Override
                     public int filterRGB(int x, int y, int rgb) {
-                        int gray = 255 - (int) (0.299 * (rgb >> 16 & 0xff) +
+                        int alpha = 255 - (int) (0.299 * (rgb >> 16 & 0xff) +
                                 0.587 * (rgb >> 8 & 0xff) +
                                 0.114 * (rgb & 0xff));
 
-                        if (gray >= cropThreshold) {
+                        if (alpha >= alphaThreshold) {
                             newImageArea.add(x, y);
                         }
+//                            if (alpha < 0) alpha = 0;
+//                            if (alpha > 255) alpha = 255;
+//                            if (alpha > highestAlpha[0]) {
+//                                highestAlpha[0] = alpha;
+//                            }
+//                            return rgb & 0x00FFFFFF | alpha << 24;
+//                        } else {
+//                            return 0x00FFFFFF;
+//                        }
 
-                        gray += alphaAdd;
-
-                        if (gray < 0) gray = 0;
-                        if (gray > 255) gray = 255;
-                        return rgb & (0x00FFFFFF | gray << 24);
+                        if (alpha < 0) alpha = 0;
+                        if (alpha > 255) alpha = 255;
+                        if (alpha > highestAlpha[0]) {
+                            highestAlpha[0] = alpha;
+                        }
+                        return rgb & 0x00FFFFFF | alpha << 24;
                     }
                 };
-                Image croppedFilteredImage;
+                Image finalImage;
                 try {
                     Image glyphImage = originalImage.getSubimage(x, y, size, size);
                     ImageProducer imageProducerGrayscale = new FilteredImageSource(glyphImage.getSource(), grayscaleAlphaFilter);
                     Image uncroppedFilteredImage = Toolkit.getDefaultToolkit().createImage(imageProducerGrayscale);
-                    uncroppedFilteredImage.getWidth(null); // force load image
+                    uncroppedFilteredImage.getWidth(null); // force load rawImage
+                    if (newImageArea.width <= 0 || newImageArea.height <= 0) {
+                        System.out.println("Image area is 0, stopping page... char: " + representedChar + " row: " + row + " col: " + col);
+                        break end;
+                    }
                     ImageProducer imageProducerCropped = new FilteredImageSource(uncroppedFilteredImage.getSource(), new CropImageFilter(newImageArea.x, newImageArea.y, newImageArea.width, newImageArea.height));
-                    croppedFilteredImage = Toolkit.getDefaultToolkit().createImage(imageProducerCropped);
+                    Image croppedFilteredImage = Toolkit.getDefaultToolkit().createImage(imageProducerCropped);
+                    if (highestAlpha[0] < 255) {
+                        float scale = 255.0f / highestAlpha[0];
+                        ImageFilter alphaScaleFilter = new RGBImageFilter() {
+                            @Override
+                            public int filterRGB(int x, int y, int rgb) {
+                                return rgb & 0x00FFFFFF | (int)((rgb >> 24) * scale) << 24;
+                            }
+                        };
+                        ImageProducer imageProducerScaledAlpha = new FilteredImageSource(croppedFilteredImage.getSource(), alphaScaleFilter);
+                        finalImage = Toolkit.getDefaultToolkit().createImage(imageProducerScaledAlpha);
+                    } else {
+                        finalImage = croppedFilteredImage;
+                    }
                 } catch (Exception e) {
-                    System.out.println("Skipping image for grid section row: " + row + " col: " + col);
+                    System.out.println("Skipping rawImage for grid section row: " + row + " col: " + col);
                     continue;
                 }
 
-                AnchoredImage anchoredImage = new AnchoredImage(croppedFilteredImage, (int) (size / (2.0 / 3.0)) + newImageArea.y);
-                if (row >= 10 && glyphListUpper != null) {
-                    glyphListUpper.add(anchoredImage);
+                // (int) (size * (2.0 / 3.0)) - newImageArea.y
+                GlyphImage glyphImage = new GlyphImage(finalImage, 2.0f * size / 3.0f - newImageArea.y, finalImage.getHeight(null) * 44.0f / originalImage.getHeight());
+                if (col >= 9 && glyphListUpper != null) {
+                    glyphListUpper.add(glyphImage);
                 } else {
-                    glyphListMain.add(anchoredImage);
+                    glyphListMain.add(glyphImage);
                 }
             }
         }
 
-        glyphFamily.put(representedChar, new MultiGlyph(glyphListMain.toArray(new AnchoredImage[0]), representedChar, random, 2));
+        glyphFamily.put(representedChar, new MultiGlyph(glyphListMain.toArray(new GlyphImage[0]), representedChar, random, 2));
         if (glyphListUpper != null) {
             char upperChar = Character.toUpperCase(representedChar);
-            glyphFamily.put(upperChar, new MultiGlyph(glyphListUpper.toArray(new AnchoredImage[0]), upperChar, random, 2));
+            glyphFamily.put(upperChar, new MultiGlyph(glyphListUpper.toArray(new GlyphImage[0]), upperChar, random, 2));
         }
     }
 }

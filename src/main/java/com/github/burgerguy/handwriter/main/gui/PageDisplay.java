@@ -2,7 +2,7 @@ package com.github.burgerguy.handwriter.main.gui;
 
 import com.github.burgerguy.handwriter.glyph.Glyph;
 import com.github.burgerguy.handwriter.glyph.GlyphFamily;
-import com.github.burgerguy.handwriter.image.AnchoredImage;
+import com.github.burgerguy.handwriter.image.GlyphImage;
 import com.github.burgerguy.handwriter.main.Main;
 import com.github.burgerguy.handwriter.page.Page;
 import com.github.burgerguy.handwriter.page.PageProvider;
@@ -38,23 +38,32 @@ public class PageDisplay extends JComponent {
 //        int pageNo = 0;
 //        Page currentPage = null;
 //        setSize(currentPage.getWidth(), currentPage.getHeight());
+        currentPage.resetPointer();
         g.drawImage(currentPage.getBackgroundImage(), 0, 0, null);
         String text = textSupplier.get();
         for (char c : text.toCharArray()) {
-            if (c == '\n') {
-                currentPage.nextLine();
-                continue;
+            switch (c) {
+                case '\n' -> currentPage.nextLine();
+                case '\t' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getTabSize());
+                case ' ' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getSpaceSize());
+                default -> {
+                    Glyph glyph = glyphFamily.getForCharacter(c);
+                    GlyphImage image = glyph.getImage();
+                    int rawWidth = image.rawImage().getWidth(null);
+                    int rawHeight = image.rawImage().getHeight(null);
+                    float scaledHeight = image.heightInLines() * currentPage.getLineHeight() * currentPage.getHeight();
+                    float scale = scaledHeight / rawHeight;
+                    float scaledWidth = rawWidth * scale;
+                    g.drawImage(image.rawImage().getScaledInstance((int) scaledWidth, (int) scaledHeight, Image.SCALE_SMOOTH), (int) currentPage.getPointerX(), (int) (currentPage.getPointerY() - image.topFromAnchorPx() * scale), null);
+                    currentPage.addToPointer(scaledWidth);
+                }
             }
-
-            Glyph glyph = glyphFamily.getForCharacter(c);
-            AnchoredImage image = glyph.getImage();
-            g.drawImage(image.image(), currentPage.getPointerX(), currentPage.getPointerY() - image.yAnchor(), null);
         }
     }
 
 
 
-    public void setPageNumber(int pageNo) {
-        currentPage = pageProvider.getPage(pageNo);
-    }
+//    public void setPageNumber(int pageNo) {
+//        currentPage = pageProvider.getPage(pageNo);
+//    }
 }

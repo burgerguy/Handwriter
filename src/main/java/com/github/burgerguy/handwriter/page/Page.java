@@ -21,10 +21,10 @@ public interface Page {
 
     boolean wordWrap();
 
-    int getPointerX();
-    int getPointerY();
+    float getPointerX();
+    float getPointerY();
 
-    void addToPointer(int x);
+    void addToPointer(float x);
     void nextLine();
-
+    void resetPointer();
 }

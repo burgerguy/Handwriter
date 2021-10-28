@@ -1,6 +1,6 @@
 package com.github.burgerguy.handwriter.glyph;
 
-import com.github.burgerguy.handwriter.image.AnchoredImage;
+import com.github.burgerguy.handwriter.image.GlyphImage;
 import com.github.burgerguy.handwriter.main.Main;
 
 import javax.imageio.ImageIO;
@@ -19,19 +19,19 @@ public final class SimpleGlyph implements Glyph {
         } catch (IOException e) {
             image = new BufferedImage(20, 20, BufferedImage.TYPE_INT_ARGB);
         }
-        return new SimpleGlyph(new AnchoredImage(image, 20), '\0');
+        return new SimpleGlyph(new GlyphImage(image, 20.0f, 1.0f), '\0');
     }
 
-    private final AnchoredImage image;
+    private final GlyphImage image;
     private final char representedChar;
 
-    private SimpleGlyph(AnchoredImage image, char representedChar) {
+    private SimpleGlyph(GlyphImage image, char representedChar) {
         this.image = image;
         this.representedChar = representedChar;
     }
 
     @Override
-    public AnchoredImage getImage() {
+    public GlyphImage getImage() {
         return image;
     }
 
@@ -39,4 +39,5 @@ public final class SimpleGlyph implements Glyph {
     public char getCharacter() {
         return representedChar;
     }
+
 }

@@ -6,18 +6,23 @@ import com.github.burgerguy.handwriter.main.gui.PageDisplay;
 import com.github.burgerguy.handwriter.page.PageProvider;
 import com.github.burgerguy.handwriter.page.RandomBackgroundPageProvider;
 
-import javax.imageio.ImageIO;
+import javax.imageio.*;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -33,12 +38,12 @@ public class Main {
     // 11 lines total, so 10 rows
     public static final int ROWS = 10;
     public static final float GRID_LINE_SIZE = 6.0f;
-    public static final int CROP_THRESHOLD = 20;
+    public static final int ALPHA_THRESHOLD = 20;
     public static final float GRID_PADDING_PERCENT = .15f;
-    public static final int ALPHA_ADD = 0;
+    public static final int ALPHA_ADD = 50;
 
     public static void main(String[] args) throws IOException {
-        MutableGlyphFamily glyphFamily = new MutableGlyphFamily(45);
+        MutableGlyphFamily glyphFamily = new MutableGlyphFamily(45, .025f, .1f);
         Path backgroundDir;
         try {
             if (args.length > 1) {
@@ -57,22 +62,23 @@ public class Main {
             try {
                 image = ImageIO.read(p.toFile());
             } catch (IOException e) {
-                System.out.println("Skipping background image: " + p.toAbsolutePath());
+                System.out.println("Skipping background rawImage: " + p.toAbsolutePath());
                 return;
             }
 
             backgroundImages.add(image);
         });
         float leftMarginDotted = 5.0f / 34.0f;
+        float leftMarginExtra = 5.5f / 34.0f;
         float leftMarginSpiral = 15.0f / 68.0f;
         PageProvider pageProvider = new RandomBackgroundPageProvider(
                 10,
                 backgroundImages.toArray(new BufferedImage[0]),
-                leftMarginDotted,
+                leftMarginExtra,
                 9.0f / 68.0f,
-                21.0f / 136.0f,
+                13.0f / 110.0f, //21.0f / 176.0f,
                 0.0f,
-                9.0f / 136.0f,
+                9.0f / 352.0f,
                 true,
                 random
         );
@@ -106,7 +112,7 @@ public class Main {
             e.printStackTrace();
             throw new FileNotFoundException("Unable to find scans");
         }
-        GlyphReader glyphReader = new GlyphReader(COLUMNS, ROWS, GRID_LINE_SIZE, CROP_THRESHOLD, GRID_PADDING_PERCENT, ALPHA_ADD);
+        GlyphReader glyphReader = new GlyphReader(COLUMNS, ROWS, GRID_LINE_SIZE, ALPHA_THRESHOLD, GRID_PADDING_PERCENT);
         Files.list(scannedDir).forEach(p -> {
             String characterString = p.getFileName().toString().split("\\.")[0];
             char character;
@@ -118,9 +124,9 @@ public class Main {
 
             BufferedImage image;
             try {
-                image = ImageIO.read(p.toFile());
+                image = importWithRGBA(p);
             } catch (IOException e) {
-                System.out.println("Unable to read image for character " + character);
+                System.out.println("Unable to read rawImage for character " + character);
                 return;
             }
 
@@ -128,5 +134,17 @@ public class Main {
         });
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public static BufferedImage importWithRGBA(Path input) throws IOException {
+        BufferedImage image = ImageIO.read(input.toFile());
+        final ColorModel expectedCm = ColorModel.getRGBdefault();
+        if (!image.getColorModel().equals(expectedCm)) {
+            BufferedImage convertedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics g = convertedImage.getGraphics();
+            g.drawImage(image, 0, 0, null);
+            return convertedImage;
+        }
+        return image;
     }
 }
