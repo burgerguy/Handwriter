@@ -1,9 +1,10 @@
 package com.github.burgerguy.handwriter.glyph;
 
+import java.util.Collection;
+
 public interface GlyphFamily {
     Glyph getForCharacter(char c);
-
-    // TODO: these don't belong here, probably in Page or something
+    Collection<Glyph> getAllGlyphs();
     float getSpaceSize();
     float getTabSize();
 }

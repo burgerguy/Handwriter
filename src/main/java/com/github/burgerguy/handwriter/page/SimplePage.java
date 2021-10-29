@@ -11,13 +11,14 @@ public class SimplePage implements Page {
     private final float bottomMargin;
     private final float lineHeight;
     private final boolean wordWrap;
+    private final float randomOffset;
 
     private final int pointerXStart;
     private final int pointerYStart;
     private int pointerX;
     private int pointerY;
 
-    public SimplePage(BufferedImage backgroundImage, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, boolean wordWrap) {
+    public SimplePage(BufferedImage backgroundImage, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, boolean wordWrap, float randomOffset) {
         this.backgroundImage = backgroundImage;
         this.leftMargin = leftMargin;
         this.rightMargin = rightMargin;
@@ -25,9 +26,10 @@ public class SimplePage implements Page {
         this.bottomMargin = bottomMargin;
         this.lineHeight = lineHeight;
         this.wordWrap = wordWrap;
+        this.randomOffset = randomOffset;
 
         pointerXStart = (int) (getWidth() * leftMargin);
-        pointerYStart = (int) (getHeight() * rightMargin + getHeight() * lineHeight);
+        pointerYStart = (int) (getHeight() * topMargin);
         pointerX = pointerXStart;
         pointerY = pointerYStart;
     }
@@ -102,6 +104,11 @@ public class SimplePage implements Page {
     public void resetPointer() {
         pointerX = pointerXStart;
         pointerY = pointerYStart;
+    }
+
+    @Override
+    public float randomOffsetMax() {
+        return randomOffset;
     }
 
 }

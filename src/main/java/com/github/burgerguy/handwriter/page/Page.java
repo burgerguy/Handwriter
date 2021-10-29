@@ -21,6 +21,8 @@ public interface Page {
 
     boolean wordWrap();
 
+    float randomOffsetMax();
+
     float getPointerX();
     float getPointerY();
 

@@ -2,6 +2,7 @@ package com.github.burgerguy.handwriter.glyph;
 
 import com.github.burgerguy.handwriter.image.GlyphImage;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class MultiGlyph implements Glyph {
@@ -22,7 +23,10 @@ public class MultiGlyph implements Glyph {
             this.recentIndices = null;
         } else {
             this.recentIndices = new int[recentMemorySize];
+            resetRecentlyUsed();
         }
+
+//        Arrays.sort(images, (i1, i2) -> Float.compare(i1.topFromAnchorPx(), i2.topFromAnchorPx()));
     }
 
     public GlyphImage[] getAllImages() {
@@ -56,8 +60,17 @@ public class MultiGlyph implements Glyph {
         }
     }
 
+    public void resetRecentlyUsed() {
+        Arrays.fill(recentIndices, -1);
+    }
+
     @Override
     public char getCharacter() {
         return representedChar;
+    }
+
+    @Override
+    public void start() {
+        resetRecentlyUsed();
     }
 }

@@ -5,4 +5,7 @@ import com.github.burgerguy.handwriter.image.GlyphImage;
 public interface Glyph {
     GlyphImage getImage();
     char getCharacter();
+    default void start() {
+        // noop
+    }
 }

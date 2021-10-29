@@ -45,7 +45,6 @@ public class GlyphReader {
         representedChar = Character.toLowerCase(representedChar);
         List<GlyphImage> glyphListMain = new ArrayList<>();
         List<GlyphImage> glyphListUpper = Character.isAlphabetic(representedChar) ? new ArrayList<>() : null;
-        end:
         for (int col = 0; col < columns; col++) {
             for (int row = 0; row < rows; row++) {
                 int x = gridToImageX(row, originalImage.getWidth());
@@ -90,7 +89,7 @@ public class GlyphReader {
                     uncroppedFilteredImage.getWidth(null); // force load rawImage
                     if (newImageArea.width <= 0 || newImageArea.height <= 0) {
                         System.out.println("Image area is 0, stopping page... char: " + representedChar + " row: " + row + " col: " + col);
-                        break end;
+                        break;
                     }
                     ImageProducer imageProducerCropped = new FilteredImageSource(uncroppedFilteredImage.getSource(), new CropImageFilter(newImageArea.x, newImageArea.y, newImageArea.width, newImageArea.height));
                     Image croppedFilteredImage = Toolkit.getDefaultToolkit().createImage(imageProducerCropped);

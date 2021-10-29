@@ -27,25 +27,37 @@ public class PageDisplay extends JComponent {
         this.pageProvider = pageProvider;
         this.random = random;
         currentPage = pageProvider.getPage(0);
-        setPreferredSize(new Dimension(currentPage.getWidth(), currentPage.getHeight()));
+        int height = Math.min(currentPage.getHeight(), Toolkit.getDefaultToolkit().getScreenSize().height - 150);
+        float scale = (float) height / currentPage.getHeight();
+        setPreferredSize(new Dimension((int) (currentPage.getWidth() * scale), height));
+        setMaximumSize(new Dimension(currentPage.getWidth(), currentPage.getHeight()));
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         random.setSeed(Main.SEED);
+        for (Glyph glyph : glyphFamily.getAllGlyphs()) {
+            glyph.start();
+        }
 
 //        int pageNo = 0;
 //        Page currentPage = null;
 //        setSize(currentPage.getWidth(), currentPage.getHeight());
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.scale((double) getWidth() / currentPage.getWidth(), (double) getHeight() / currentPage.getHeight());
         currentPage.resetPointer();
         g.drawImage(currentPage.getBackgroundImage(), 0, 0, null);
         String text = textSupplier.get();
         for (char c : text.toCharArray()) {
+//            float randomOffset = (random.nextFloat() * currentPage.randomOffsetMax()) - (currentPage.randomOffsetMax() / 4.0f);
+            float randomOffset = random.nextFloat() * currentPage.randomOffsetMax();
             switch (c) {
                 case '\n' -> currentPage.nextLine();
-                case '\t' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getTabSize());
-                case ' ' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getSpaceSize());
+                case '\t' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getTabSize() + randomOffset);
+                case ' ' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getSpaceSize() + randomOffset);
                 default -> {
                     Glyph glyph = glyphFamily.getForCharacter(c);
                     GlyphImage image = glyph.getImage();
@@ -55,7 +67,7 @@ public class PageDisplay extends JComponent {
                     float scale = scaledHeight / rawHeight;
                     float scaledWidth = rawWidth * scale;
                     g.drawImage(image.rawImage().getScaledInstance((int) scaledWidth, (int) scaledHeight, Image.SCALE_SMOOTH), (int) currentPage.getPointerX(), (int) (currentPage.getPointerY() - image.topFromAnchorPx() * scale), null);
-                    currentPage.addToPointer(scaledWidth);
+                    currentPage.addToPointer(scaledWidth + randomOffset);
                 }
             }
         }
