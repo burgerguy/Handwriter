@@ -6,9 +6,12 @@ import com.github.burgerguy.handwriter.image.GlyphImage;
 import com.github.burgerguy.handwriter.main.Main;
 import com.github.burgerguy.handwriter.page.Page;
 import com.github.burgerguy.handwriter.page.PageProvider;
+import com.github.burgerguy.handwriter.page.WordWrapMode;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
@@ -51,14 +54,14 @@ public class PageDisplay extends JComponent {
         currentPage.resetPointer();
         g.drawImage(currentPage.getBackgroundImage(), 0, 0, null);
         String text = textSupplier.get();
-        for (char c : text.toCharArray()) {
-//            float randomOffset = (random.nextFloat() * currentPage.randomOffsetMax()) - (currentPage.randomOffsetMax() / 4.0f);
-            float randomOffset = random.nextFloat() * currentPage.randomOffsetMax();
-            switch (c) {
-                case '\n' -> currentPage.nextLine();
-                case '\t' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getTabSize() + randomOffset);
-                case ' ' -> currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getSpaceSize() + randomOffset);
-                default -> {
+        for (String line : text.split("\n")) {
+            for (String word : line.split(" ")) {
+
+                List<DrawableImage> drawableImages = new ArrayList<>();
+                float wordLength = 0;
+
+                for (char c : word.toCharArray()) {
+                    float randomOffset = random.nextFloat() * currentPage.randomOffsetMax();
                     Glyph glyph = glyphFamily.getForCharacter(c);
                     GlyphImage image = glyph.getImage();
                     int rawWidth = image.rawImage().getWidth(null);
@@ -66,14 +69,40 @@ public class PageDisplay extends JComponent {
                     float scaledHeight = image.heightInLines() * currentPage.getLineHeight() * currentPage.getHeight();
                     float scale = scaledHeight / rawHeight;
                     float scaledWidth = rawWidth * scale;
-                    g.drawImage(image.rawImage().getScaledInstance((int) scaledWidth, (int) scaledHeight, Image.SCALE_SMOOTH), (int) currentPage.getPointerX(), (int) (currentPage.getPointerY() - image.topFromAnchorPx() * scale), null);
-                    currentPage.addToPointer(scaledWidth + randomOffset);
+
+                    DrawableImage drawableImage = new DrawableImage(image.rawImage().getScaledInstance((int) scaledWidth, (int) scaledHeight, Image.SCALE_SMOOTH), image.topFromAnchorPx() * scale, scaledWidth + randomOffset);
+                    drawableImages.add(drawableImage);
+                    wordLength += drawableImage.width();
                 }
+
+                // word wrap
+                WordWrapMode wordWrapMode = currentPage.getWordWrapMode();
+
+                if (!wordWrapMode.equals(WordWrapMode.NONE)) {
+                    float wordWrapLocation = switch (wordWrapMode) {
+                        case BEFORE_WORD -> currentPage.getPointerX() + wordLength;
+                        case AFTER_WORD -> currentPage.getPointerX();
+                        default -> throw new IllegalStateException("Unexpected word wrap mode: " + wordWrapMode);
+                    };
+
+                    if (wordWrapLocation > currentPage.getWidth() * (1.0f - currentPage.getRightMargin())) {
+                        currentPage.nextLine();
+                    }
+                }
+
+                for (DrawableImage drawableImage : drawableImages) {
+                    g.drawImage(drawableImage.image(), (int) currentPage.getPointerX(), (int) (currentPage.getPointerY() - drawableImage.yOffset()), null);
+                    currentPage.addToPointer(drawableImage.width());
+                }
+                // add space to pointer
+                currentPage.addToPointer(currentPage.getWidth() * glyphFamily.getSpaceSize() + (random.nextFloat() * currentPage.randomOffsetMax()));
             }
+
+            currentPage.nextLine();
         }
     }
 
-
+    private record DrawableImage(Image image, float yOffset, float width) {}
 
 //    public void setPageNumber(int pageNo) {
 //        currentPage = pageProvider.getPage(pageNo);

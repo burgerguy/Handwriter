@@ -19,7 +19,7 @@ public interface Page {
 
     float getLineHeight();
 
-    boolean wordWrap();
+    WordWrapMode getWordWrapMode();
 
     float randomOffsetMax();
 

@@ -10,7 +10,7 @@ public class SimplePage implements Page {
     private final float topMargin;
     private final float bottomMargin;
     private final float lineHeight;
-    private final boolean wordWrap;
+    private final WordWrapMode wordWrapMode;
     private final float randomOffset;
 
     private final int pointerXStart;
@@ -18,14 +18,14 @@ public class SimplePage implements Page {
     private int pointerX;
     private int pointerY;
 
-    public SimplePage(BufferedImage backgroundImage, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, boolean wordWrap, float randomOffset) {
+    public SimplePage(BufferedImage backgroundImage, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, WordWrapMode wordWrapMode, float randomOffset) {
         this.backgroundImage = backgroundImage;
         this.leftMargin = leftMargin;
         this.rightMargin = rightMargin;
         this.topMargin = topMargin;
         this.bottomMargin = bottomMargin;
         this.lineHeight = lineHeight;
-        this.wordWrap = wordWrap;
+        this.wordWrapMode = wordWrapMode;
         this.randomOffset = randomOffset;
 
         pointerXStart = (int) (getWidth() * leftMargin);
@@ -65,8 +65,8 @@ public class SimplePage implements Page {
     }
 
     @Override
-    public boolean wordWrap() {
-        return wordWrap;
+    public WordWrapMode getWordWrapMode() {
+        return wordWrapMode;
     }
 
     @Override

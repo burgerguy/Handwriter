@@ -17,18 +17,18 @@ public class RandomBackgroundPageProvider implements PageProvider {
     private final float topMargin;
     private final float bottomMargin;
     private final float lineHeight;
-    private final boolean wordWrap;
+    private final WordWrapMode wordWrapMode;
     private final float randomOffset;
 
     // TODO: add memory for repeats
-    public RandomBackgroundPageProvider(int expectedPages, BufferedImage[] backgroundImages, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, boolean wordWrap, float randomOffset, Random random) {
+    public RandomBackgroundPageProvider(int expectedPages, BufferedImage[] backgroundImages, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, WordWrapMode wordWrapMode, float randomOffset, Random random) {
         this.backgroundImages = backgroundImages;
         this.leftMargin = leftMargin;
         this.rightMargin = rightMargin;
         this.topMargin = topMargin;
         this.bottomMargin = bottomMargin;
         this.lineHeight = lineHeight;
-        this.wordWrap = wordWrap;
+        this.wordWrapMode = wordWrapMode;
         this.random = random;
         this.randomOffset = randomOffset;
 
@@ -37,6 +37,6 @@ public class RandomBackgroundPageProvider implements PageProvider {
 
     @Override
     public Page getPage(int pageNo) {
-        return pageNoToPageMap.computeIfAbsent(pageNo, i -> new SimplePage(backgroundImages[random.nextInt(backgroundImages.length)], leftMargin, rightMargin, topMargin, bottomMargin, lineHeight, wordWrap, randomOffset));
+        return pageNoToPageMap.computeIfAbsent(pageNo, i -> new SimplePage(backgroundImages[random.nextInt(backgroundImages.length)], leftMargin, rightMargin, topMargin, bottomMargin, lineHeight, wordWrapMode, randomOffset));
     }
 }

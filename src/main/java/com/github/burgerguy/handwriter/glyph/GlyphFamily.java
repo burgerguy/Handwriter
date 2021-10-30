@@ -6,5 +6,4 @@ public interface GlyphFamily {
     Glyph getForCharacter(char c);
     Collection<Glyph> getAllGlyphs();
     float getSpaceSize();
-    float getTabSize();
 }

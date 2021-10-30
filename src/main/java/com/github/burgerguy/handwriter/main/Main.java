@@ -5,6 +5,7 @@ import com.github.burgerguy.handwriter.glyph.GlyphReader;
 import com.github.burgerguy.handwriter.main.gui.PageDisplay;
 import com.github.burgerguy.handwriter.page.PageProvider;
 import com.github.burgerguy.handwriter.page.RandomBackgroundPageProvider;
+import com.github.burgerguy.handwriter.page.WordWrapMode;
 
 import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
@@ -79,7 +80,7 @@ public class Main {
                 13.0f / 110.0f, // 21.0f / 176.0f,
                 0.0f,
                 9.0f / 352.0f,
-                true,
+                WordWrapMode.AFTER_WORD,
                 4.0f,
                 random
         );

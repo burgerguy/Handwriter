@@ -42,11 +42,6 @@ public class MutableGlyphFamily implements GlyphFamily {
     }
 
     @Override
-    public float getTabSize() {
-        return getSpaceSize() * 4.0f;
-    }
-
-    @Override
     public Collection<Glyph> getAllGlyphs() {
         return charToGlyphMap.values();
     }
