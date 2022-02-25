@@ -8,6 +8,7 @@ import com.github.burgerguy.handwriter.page.Page;
 import com.github.burgerguy.handwriter.page.PageProvider;
 import com.github.burgerguy.handwriter.page.WordWrapMode;
 
+import java.awt.image.BufferedImage;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -29,11 +30,7 @@ public class PageDisplay extends JComponent {
         this.glyphFamily = glyphFamily;
         this.pageProvider = pageProvider;
         this.random = random;
-        currentPage = pageProvider.getPage(0);
-        int height = Math.min(currentPage.getHeight(), Toolkit.getDefaultToolkit().getScreenSize().height - 150);
-        float scale = (float) height / currentPage.getHeight();
-        setPreferredSize(new Dimension((int) (currentPage.getWidth() * scale), height));
-        setMaximumSize(new Dimension(currentPage.getWidth(), currentPage.getHeight()));
+        setPageNumber(0);
     }
 
     @Override
@@ -44,9 +41,6 @@ public class PageDisplay extends JComponent {
             glyph.start();
         }
 
-//        int pageNo = 0;
-//        Page currentPage = null;
-//        setSize(currentPage.getWidth(), currentPage.getHeight());
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -104,7 +98,20 @@ public class PageDisplay extends JComponent {
 
     private record DrawableImage(Image image, float yOffset, float width) {}
 
-//    public void setPageNumber(int pageNo) {
-//        currentPage = pageProvider.getPage(pageNo);
-//    }
+    public void setPageNumber(int pageNo) {
+        currentPage = pageProvider.getPage(pageNo);
+        int height = Math.min(currentPage.getHeight(), Toolkit.getDefaultToolkit().getScreenSize().height - 150);
+        float scale = (float) height / currentPage.getHeight();
+        setPreferredSize(new Dimension((int) (currentPage.getWidth() * scale), height));
+        setMaximumSize(new Dimension(currentPage.getWidth(), currentPage.getHeight()));
+    }
+
+    public BufferedImage takeScreenshot() {
+        BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        printAll(g);
+        g.dispose();
+        return image;
+    }
+
 }

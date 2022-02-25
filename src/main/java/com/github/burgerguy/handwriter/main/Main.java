@@ -7,6 +7,7 @@ import com.github.burgerguy.handwriter.page.PageProvider;
 import com.github.burgerguy.handwriter.page.RandomBackgroundPageProvider;
 import com.github.burgerguy.handwriter.page.WordWrapMode;
 
+import java.io.File;
 import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import javax.swing.filechooser.FileSystemView;
 
 public class Main {
 
@@ -46,20 +48,23 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         MutableGlyphFamily glyphFamily = new MutableGlyphFamily(45, random);
-        Path backgroundDir;
+        Path frontBackgroundDir;
+        Path backBackgroundDir;
         try {
-            if (args.length > 1) {
-                backgroundDir = Paths.get(args[1]);
+            if (args.length > 2) {
+                frontBackgroundDir = Paths.get(args[0]);
+                backBackgroundDir = Paths.get(args[1]);
             } else {
-                backgroundDir = Paths.get(Main.class.getClassLoader().getResource("page-backgrounds/").toURI());
+                frontBackgroundDir = Paths.get(Main.class.getClassLoader().getResource("page-backgrounds/front/").toURI());
+                backBackgroundDir = Paths.get(Main.class.getClassLoader().getResource("page-backgrounds/back/").toURI());
             }
         } catch (URISyntaxException | NullPointerException e) {
             e.printStackTrace();
             throw new FileNotFoundException("Unable to find scans");
         }
 
-        List<BufferedImage> backgroundImages = new ArrayList<>(10);
-        Files.list(backgroundDir).forEach(p -> {
+        List<BufferedImage> frontBackgroundImages = new ArrayList<>(10);
+        Files.list(frontBackgroundDir).forEach(p -> {
             BufferedImage image;
             try {
                 image = ImageIO.read(p.toFile());
@@ -68,13 +73,28 @@ public class Main {
                 return;
             }
 
-            backgroundImages.add(image);
+            frontBackgroundImages.add(image);
         });
+
+        List<BufferedImage> backBackgroundImages = new ArrayList<>(10);
+        Files.list(backBackgroundDir).forEach(p -> {
+            BufferedImage image;
+            try {
+                image = ImageIO.read(p.toFile());
+            } catch (IOException e) {
+                System.out.println("Skipping background rawImage: " + p.toAbsolutePath());
+                return;
+            }
+
+            backBackgroundImages.add(image);
+        });
+
         float leftMarginDotted = 5.0f / 34.0f;
         float leftMarginSpiral = 15.0f / 68.0f;
         PageProvider pageProvider = new RandomBackgroundPageProvider(
                 10,
-                backgroundImages.toArray(new BufferedImage[0]),
+                frontBackgroundImages.toArray(new BufferedImage[0]),
+                backBackgroundImages.toArray(new BufferedImage[0]),
                 leftMarginDotted,
                 9.0f / 68.0f,
                 13.0f / 110.0f, // 21.0f / 176.0f,
@@ -96,6 +116,12 @@ public class Main {
         JButton seedButton = new JButton("New Seed");
         mainPanel.add(seedButton);
 
+        JSpinner pageNoSpinner = new JSpinner();
+        mainPanel.add(pageNoSpinner);
+
+        JButton exportButton = new JButton("Export");
+        mainPanel.add(exportButton);
+
         PageDisplay pageDisplay = new PageDisplay(textArea::getText, glyphFamily, pageProvider, random);
         mainPanel.add(pageDisplay);
 
@@ -110,6 +136,29 @@ public class Main {
         seedButton.addActionListener(e -> {
             SEED = seedGeneratorRandom.nextLong();
             pageDisplay.repaint();
+        });
+
+        pageNoSpinner.addChangeListener(e -> {
+            if (e.getSource() instanceof JSpinner spinner) {
+                pageDisplay.setPageNumber((int) spinner.getValue());
+            }
+            pageDisplay.repaint();
+        });
+
+        exportButton.addActionListener(e -> {
+            JFileChooser jFileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+
+            int chooserStatus = jFileChooser.showSaveDialog(frame);
+
+            if (chooserStatus == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = jFileChooser.getSelectedFile();
+                BufferedImage image = pageDisplay.takeScreenshot();
+                try {
+                    ImageIO.write(image, "png", selectedFile);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         });
 
         frame.add(mainPanel);

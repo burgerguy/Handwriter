@@ -11,7 +11,8 @@ public class RandomBackgroundPageProvider implements PageProvider {
     private final Int2ObjectMap<Page> pageNoToPageMap;
 
     private final Random random;
-    private final BufferedImage[] backgroundImages;
+    private final BufferedImage[] frontBackgroundImages;
+    private final BufferedImage[] backBackgroundImages;
     private final float leftMargin;
     private final float rightMargin;
     private final float topMargin;
@@ -21,8 +22,9 @@ public class RandomBackgroundPageProvider implements PageProvider {
     private final float randomOffset;
 
     // TODO: add memory for repeats
-    public RandomBackgroundPageProvider(int expectedPages, BufferedImage[] backgroundImages, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, WordWrapMode wordWrapMode, float randomOffset, Random random) {
-        this.backgroundImages = backgroundImages;
+    public RandomBackgroundPageProvider(int expectedPages, BufferedImage[] frontBackgroundImages, BufferedImage[] backBackgroundImages, float leftMargin, float rightMargin, float topMargin, float bottomMargin, float lineHeight, WordWrapMode wordWrapMode, float randomOffset, Random random) {
+        this.frontBackgroundImages = frontBackgroundImages;
+        this.backBackgroundImages = backBackgroundImages;
         this.leftMargin = leftMargin;
         this.rightMargin = rightMargin;
         this.topMargin = topMargin;
@@ -37,6 +39,15 @@ public class RandomBackgroundPageProvider implements PageProvider {
 
     @Override
     public Page getPage(int pageNo) {
-        return pageNoToPageMap.computeIfAbsent(pageNo, i -> new SimplePage(backgroundImages[random.nextInt(backgroundImages.length)], leftMargin, rightMargin, topMargin, bottomMargin, lineHeight, wordWrapMode, randomOffset));
+        return pageNoToPageMap.computeIfAbsent(pageNo, i -> {
+            BufferedImage backgroundImage;
+            if (pageNo % 2 == 0) {
+                backgroundImage = frontBackgroundImages[random.nextInt(frontBackgroundImages.length)];
+            } else {
+                backgroundImage = backBackgroundImages[random.nextInt(backBackgroundImages.length)];
+            }
+
+            return new SimplePage(backgroundImage, leftMargin, rightMargin, topMargin, bottomMargin, lineHeight, wordWrapMode, randomOffset);
+        });
     }
 }
