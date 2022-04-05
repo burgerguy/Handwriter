@@ -9,7 +9,6 @@ import com.github.burgerguy.handwriter.page.WordWrapMode;
 
 import java.io.File;
 import javax.imageio.*;
-import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -19,16 +18,13 @@ import java.awt.image.ColorModel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import javax.swing.filechooser.FileSystemView;
 
 public class Main {
 
@@ -45,6 +41,7 @@ public class Main {
     public static final float GRID_LINE_SIZE = 6.0f;
     public static final int ALPHA_THRESHOLD = 30;
     public static final float GRID_PADDING_PERCENT = .15f;
+    public static final float MIN_ALPHA_RATIO = .001f;
 
     public static void main(String[] args) throws IOException {
         MutableGlyphFamily glyphFamily = new MutableGlyphFamily(45, random);
@@ -175,7 +172,7 @@ public class Main {
             e.printStackTrace();
             throw new FileNotFoundException("Unable to find scans");
         }
-        GlyphReader glyphReader = new GlyphReader(COLUMNS, ROWS, GRID_LINE_SIZE, ALPHA_THRESHOLD, GRID_PADDING_PERCENT);
+        GlyphReader glyphReader = new GlyphReader(COLUMNS, ROWS, GRID_LINE_SIZE, ALPHA_THRESHOLD, GRID_PADDING_PERCENT, MIN_ALPHA_RATIO);
         Files.list(scannedDir).forEach(p -> {
             String characterString = p.getFileName().toString().split("\\.")[0];
             char character;

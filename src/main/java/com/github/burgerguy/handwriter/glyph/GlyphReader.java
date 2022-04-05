@@ -7,6 +7,7 @@ import java.awt.image.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GlyphReader {
 
@@ -15,13 +16,15 @@ public class GlyphReader {
     private final float gridLineSize;
     private final int alphaThreshold;
     private final float gridPaddingPercent;
+    private final float minAlphaRatio;
 
-    public GlyphReader(int columns, int rows, float gridLineSize, int alphaThreshold, float gridPaddingPercent) {
+    public GlyphReader(int columns, int rows, float gridLineSize, int alphaThreshold, float gridPaddingPercent, float minAlphaRatio) {
         this.columns = columns;
         this.rows = rows;
         this.gridLineSize = gridLineSize;
         this.alphaThreshold = alphaThreshold;
         this.gridPaddingPercent = gridPaddingPercent;
+        this.minAlphaRatio = minAlphaRatio;
     }
 
     // gridLineSize / original * new = new grid line width
@@ -51,7 +54,8 @@ public class GlyphReader {
                 int y = gridToImageY(col, originalImage.getHeight());
                 int size = gridBoxSize(originalImage.getWidth());
 
-                final int[] highestAlpha = {0}; // ew
+                AtomicInteger currentHighestAlpha = new AtomicInteger(0);
+                AtomicInteger currentTotalAlpha = new AtomicInteger(0);
                 Rectangle newImageArea = new Rectangle((int) (size / 2.0), (int) (size / 2.0), 0, 0);
                 ImageFilter grayscaleAlphaFilter = new RGBImageFilter() {
                     @Override
@@ -63,20 +67,12 @@ public class GlyphReader {
                         if (alpha >= alphaThreshold) {
                             newImageArea.add(x, y);
                         }
-//                            if (alpha < 0) alpha = 0;
-//                            if (alpha > 255) alpha = 255;
-//                            if (alpha > highestAlpha[0]) {
-//                                highestAlpha[0] = alpha;
-//                            }
-//                            return rgb & 0x00FFFFFF | alpha << 24;
-//                        } else {
-//                            return 0x00FFFFFF;
-//                        }
 
                         if (alpha < 0) alpha = 0;
                         if (alpha > 255) alpha = 255;
-                        if (alpha > highestAlpha[0]) {
-                            highestAlpha[0] = alpha;
+                        if (alpha > 0) {
+                            currentTotalAlpha.getAndAdd(alpha);
+                            currentHighestAlpha.getAndAccumulate(alpha, Math::max);
                         }
                         return rgb & 0x00FFFFFF | alpha << 24;
                     }
@@ -90,11 +86,20 @@ public class GlyphReader {
                     if (newImageArea.width <= 0 || newImageArea.height <= 0) {
                         System.out.println("Image area is 0, stopping page... char: " + representedChar + " row: " + row + " col: " + col);
                         break;
+                    } else {
+                        int maxAlpha = size * size * 255;
+                        int totalAlpha = currentTotalAlpha.get();
+                        float alphaRatio = (float) totalAlpha / maxAlpha;
+                        if (alphaRatio < minAlphaRatio) {
+                            System.out.println("Image alpha ratio is " + alphaRatio + ", but min alpha ratio is " + minAlphaRatio + ", stopping page... char: " + representedChar + " row: " + row + " col: " + col);
+                            break;
+                        }
                     }
                     ImageProducer imageProducerCropped = new FilteredImageSource(uncroppedFilteredImage.getSource(), new CropImageFilter(newImageArea.x, newImageArea.y, newImageArea.width, newImageArea.height));
                     Image croppedFilteredImage = Toolkit.getDefaultToolkit().createImage(imageProducerCropped);
-                    if (highestAlpha[0] < 255) {
-                        float scale = 255.0f / highestAlpha[0];
+                    int highestAlpha = currentHighestAlpha.get();
+                    if (highestAlpha < 255) {
+                        float scale = 255.0f / highestAlpha;
                         ImageFilter alphaScaleFilter = new RGBImageFilter() {
                             @Override
                             public int filterRGB(int x, int y, int rgb) {
